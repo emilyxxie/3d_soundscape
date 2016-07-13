@@ -75,7 +75,8 @@ void draw() {
 
   soundscape.addFrame();
   soundscape.render();
-  //soundscape.drawStartLine();
+  soundscape.drawStartLine();
+  soundscape.lastFrame.clear();
   
   //if (frameCount < 10) {
   //println(soundscape.soundscapeVectors.toString());
@@ -98,17 +99,10 @@ class Soundscape {
     strokeWeight(1);
     stroke(255);
     
-     //translate(width/2, height/2+50);
-      //rotateX(PI/3);
-      //translate(width/2, height/2);
-      
-      // center in the middle
+    // center in the middle
     translate(width / 2 - 100, height / 2 - 200, 0);
-        
     rotateX(PI/2.5);
-  //translate(-width/2, -height/12);
-    
-    //if (frameCount < 6) {
+
     int soundscapeVectorsIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeVectors) {
       if (soundscapeVectorsIndex >= soundscapeVectors.size() - 1) {
@@ -147,10 +141,13 @@ class Soundscape {
     soundscapeVectors.add(fftFrame);
   }
   
-  // this might have to take the value of every last item.
   void drawStartLine() {
+    if (frameCount < 4) {
+      println(lastFrame.toString());
+      println(System.getProperty("line.separator"));
+    }
      for (int i = 0; i < lastFrame.size() - 1; i++) {
-       strokeWeight(5);
+       strokeWeight(3);
        stroke(0, 255, 255);
        line(
          lastFrame.get(i).x,
@@ -158,7 +155,7 @@ class Soundscape {
          lastFrame.get(i).z,
          lastFrame.get(i + 1).x,
          lastFrame.get(i + 1).y,
-         lastFrame.get(i + 1).y
+         lastFrame.get(i + 1).z
        );
      }
   }
