@@ -76,13 +76,18 @@ void draw() {
   fft.forward( song.left );
   //amp = new Amplitude(this);
   soundscape.addFrame();
-  soundscape.render();
   soundscape.drawStartLine();
+  soundscape.render();
   
-  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y > clearThreshold) {
+  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y >= clearThreshold) {
     soundscape.soundscapeVectors.remove(0);
-    soundscape.shiftBackward();
+    soundscape.sb = true;
   }
+  
+   if (soundscape.sb == true) {
+     soundscape.shiftBackward();
+   }
+  
 
 
   
@@ -93,7 +98,7 @@ class Soundscape {
 
   ArrayList<ArrayList<PVector>> soundscapeVectors = new ArrayList<ArrayList<PVector>>(); 
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
-  boolean shiftForward = false;
+  boolean sb = false;
   
   void render() {
     
@@ -131,6 +136,7 @@ class Soundscape {
   }
   
   void shiftBackward() {
+    //translate(0, yScale);
     for (ArrayList<PVector> fftFrame : soundscapeVectors) {
       for (PVector fftVector : fftFrame) {
         fftVector.y -= yScale;
@@ -155,10 +161,6 @@ class Soundscape {
   }
   
   void drawStartLine() {
-    if (frameCount < 4) {
-      println(lastFrame.toString());
-      println(System.getProperty("line.separator"));
-    }
      for (int i = 0; i < lastFrame.size() - 1; i++) {
        strokeWeight(3);
        stroke(0, 255, 255);
