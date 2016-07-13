@@ -28,11 +28,11 @@ int spectrumScale;
 int startHeight;
 float yScale = 1.5;
 int xScale;
+float clearThreshold;
 
 Soundscape soundscape;
 
-void setup()
-{
+void setup() {
   fullScreen(P3D, 2);
   background(0);
   
@@ -56,6 +56,9 @@ void setup()
   xScale = int((width / 4 ) / fft.avgSize());
 
   soundscape = new Soundscape();
+  
+  // the threshold at which to start clearing the front of the FFT array to make the things in back "disapear"
+  clearThreshold = height - (height * 0.55);
   println(height);  
 
 }
@@ -66,22 +69,22 @@ void draw() {
   strokeWeight(1);
   
   fill(0, 100);
-
-  
   rect(0, 0, width, height);
   
   // perform a forward FFT on the samples in jingle's mix buffer,
   // which contains the mix of both the left and right channels of the file
   fft.forward( song.left );
   //amp = new Amplitude(this);
-
   soundscape.addFrame();
   soundscape.render();
   soundscape.drawStartLine();
   
-  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y > height - (height * 0.60)) {
+  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y > clearThreshold) {
     soundscape.soundscapeVectors.remove(0);
+    soundscape.shiftBackward();
   }
+
+
   
   soundscape.lastFrame.clear();
 }
@@ -90,6 +93,7 @@ class Soundscape {
 
   ArrayList<ArrayList<PVector>> soundscapeVectors = new ArrayList<ArrayList<PVector>>(); 
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
+  boolean shiftForward = false;
   
   void render() {
     
@@ -124,6 +128,14 @@ class Soundscape {
       soundscapeVectorsIndex++;
     }
     
+  }
+  
+  void shiftBackward() {
+    for (ArrayList<PVector> fftFrame : soundscapeVectors) {
+      for (PVector fftVector : fftFrame) {
+        fftVector.y -= yScale;
+      }
+    }
   }
   
   
