@@ -26,14 +26,15 @@ import java.util.*;
 
 int spectrumScale;
 int startHeight;
+float yScale = 1.5;
+int xScale;
 
 Soundscape soundscape;
 
 void setup()
 {
-  size(1000, 1000, P3D);
+  fullScreen(P3D, 2);
   background(0);
-  spectrumScale = 3;
   
   minim = new Minim(this);
 
@@ -51,10 +52,12 @@ void setup()
   // calculate log averages
   // first param indicates minimum bandwidth
   // second param dictates how many bands to split it into
-  //fft.logAverages( 100, 10 );
   fft.logAverages( 10, 5 );
+  //fft.logAverages( 500, 20 );
 
   soundscape = new Soundscape();
+  
+  xScale = int((width / 4 ) / fft.avgSize());  
 
 }
 
@@ -77,10 +80,6 @@ void draw() {
   soundscape.render();
   soundscape.drawStartLine();
   soundscape.lastFrame.clear();
-  
-  //if (frameCount < 10) {
-  //println(soundscape.soundscapeVectors.toString());
-  //}
 }
 
 class Soundscape {
@@ -91,24 +90,23 @@ class Soundscape {
   ArrayList<ArrayList<PVector>> soundscapeVectors = new ArrayList<ArrayList<PVector>>(); 
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
   
-  //interval per frequency band when averaged
-  int interval = int((width / 2 ) / fft.avgSize());  
-  
   void render() {
     
     strokeWeight(1);
     stroke(255);
     
     // center in the middle
-    translate(width / 2 - 100, height / 2 - 200, 0);
-    rotateX(PI/2.5);
+    translate(width /2, height / 2 - 200, 0);
+    rotateX(PI/3);
+    rotateY(radians(-5));
+    rotateZ(radians(30));
 
     int soundscapeVectorsIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeVectors) {
       if (soundscapeVectorsIndex >= soundscapeVectors.size() - 1) {
         continue;
       }
-      int fftFrameIndex = 0; 
+      int fftFrameIndex = 0;
       beginShape(TRIANGLE_STRIP);
       for (PVector fftVector : fftFrame) {
         if (fftFrameIndex >= fftFrame.size() - 1) {
@@ -131,9 +129,10 @@ class Soundscape {
     ArrayList<PVector> fftFrame = new ArrayList<PVector>();
     for (int i = 0; i < fft.avgSize(); i++) {
       PVector vector = new PVector(
-        i * 4,
-        frameCount * 4,
-        fft.getAvg(i) * i / 10
+        i * xScale,
+        frameCount * yScale,
+        fft.getAvg(i) * i / 12
+        //fft.getAvg(i) * i / 2
       );
       fftFrame.add(vector);
       lastFrame.add(vector);
