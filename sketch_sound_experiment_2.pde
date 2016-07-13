@@ -53,11 +53,10 @@ void setup()
   // first param indicates minimum bandwidth
   // second param dictates how many bands to split it into
   fft.logAverages( 10, 5 );
-  //fft.logAverages( 500, 20 );
+  xScale = int((width / 4 ) / fft.avgSize());
 
   soundscape = new Soundscape();
-  
-  xScale = int((width / 4 ) / fft.avgSize());  
+  println(height);  
 
 }
 
@@ -79,13 +78,15 @@ void draw() {
   soundscape.addFrame();
   soundscape.render();
   soundscape.drawStartLine();
+  
+  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y > height - (height * 0.60)) {
+    soundscape.soundscapeVectors.remove(0);
+  }
+  
   soundscape.lastFrame.clear();
 }
 
 class Soundscape {
-
-  //public Soundscape() {
-  //}
 
   ArrayList<ArrayList<PVector>> soundscapeVectors = new ArrayList<ArrayList<PVector>>(); 
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
@@ -93,13 +94,13 @@ class Soundscape {
   void render() {
     
     strokeWeight(1);
-    stroke(255);
+    stroke(255, 40);
     
     // center in the middle
-    translate(width /2, height / 2 - 200, 0);
+    translate(width / 2, (height / 2) - (height * 0.20), 0);
     rotateX(PI/3);
     rotateY(radians(-5));
-    rotateZ(radians(30));
+    rotateZ(radians(35));
 
     int soundscapeVectorsIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeVectors) {
@@ -122,6 +123,7 @@ class Soundscape {
       endShape();
       soundscapeVectorsIndex++;
     }
+    
   }
   
   
