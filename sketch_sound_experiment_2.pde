@@ -4,6 +4,7 @@
 // http://chuck.cs.princeton.edu/
 
 
+import de.voidplus.leapmotion.*;
 import org.apache.commons.lang3.*;
 import org.apache.commons.lang3.builder.*;
 import org.apache.commons.lang3.concurrent.*;
@@ -25,14 +26,14 @@ import ddf.minim.*;
 Minim       minim;
 AudioPlayer song;
 ddf.minim.analysis.FFT fft;
-//Amplitude   amp;
 BeatDetect beat;
 
 import java.util.*; 
 
+LeapMotion leap;
 int spectrumScale;
 int startHeight;
-float yScale = 1.5;
+float yScale = 2;
 int xScale;
 float clearThreshold;
 float yIncrement = 0;
@@ -68,6 +69,9 @@ void setup() {
   
   // the threshold at which to start clearing the front of the FFT array to make the things in back "disapear"
   clearThreshold = height - (height * 0.55);
+  
+  
+  leap = new LeapMotion(this);
 
 }
 
@@ -84,21 +88,19 @@ void draw() {
   fft.forward( song.mix );
   //amp = new Amplitude(this);
   soundscape.addFrame();
-  soundscape.render();
-  soundscape.drawStartLine();
-  
-  // never did an equals equals
-  // next step is to figure out when exactly I can just do the -= yScale only once
-  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y == clearThreshold) {
-    yIncrement -= yScale;
-  }
   
   if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y >= clearThreshold) {
+    yIncrement -= yScale;
     soundscape.soundscapeVectors.remove(0);
     soundscape.shiftBackward();
   }
+  
+  soundscape.render();
+  soundscape.drawStartLine();
+  
   soundscape.lastFrame.clear();
   yIncrement += yScale;
+  
 }
 
 class Soundscape {
@@ -145,10 +147,10 @@ class Soundscape {
   void shiftBackward() {
 
     // to sync up the next y-axis start, we must shift back just once
-    if (!initialYShift) {
-       yIncrement -= yScale;
-       initialYShift = true;
-    }
+    //if (!initialYShift) {
+    //   yIncrement -= yScale;
+    //   initialYShift = true;
+    //}
     
     for (ArrayList<PVector> fftFrame : soundscapeVectors) {
       for (PVector fftVector : fftFrame) {
