@@ -1,4 +1,10 @@
-import org.apache.commons.lang3.*; //<>//
+// open sound control  //<>//
+// OSC p5.
+// maxmsp
+// http://chuck.cs.princeton.edu/
+
+
+import org.apache.commons.lang3.*;
 import org.apache.commons.lang3.builder.*;
 import org.apache.commons.lang3.concurrent.*;
 import org.apache.commons.lang3.event.*;
@@ -29,10 +35,13 @@ int startHeight;
 float yScale = 1.5;
 int xScale;
 float clearThreshold;
+float yIncrement = 0;
+float zMuffle = 15;
 
 Soundscape soundscape;
 
 void setup() {
+  //size(1000, 800, P3D);
   fullScreen(P3D, 2);
   background(0);
   
@@ -43,8 +52,8 @@ void setup() {
   // a power-of-two buffer size and this is a good size.
   song = minim.loadFile("flashy_flashy.mp3", 1024);
   // loop the file indefinitely
-  song.play();
-  beat = new BeatDetect();
+  song.play(); //<>//
+  beat = new BeatDetect(); //<>//
   
   fft = new FFT( song.bufferSize(), song.sampleRate());
   //fft.linAverages( 100 );
@@ -59,7 +68,6 @@ void setup() {
   
   // the threshold at which to start clearing the front of the FFT array to make the things in back "disapear"
   clearThreshold = height - (height * 0.55);
-  println(height);  
 
 }
 
@@ -73,32 +81,31 @@ void draw() {
   
   // perform a forward FFT on the samples in jingle's mix buffer,
   // which contains the mix of both the left and right channels of the file
-  fft.forward( song.left );
+  fft.forward( song.mix );
   //amp = new Amplitude(this);
   soundscape.addFrame();
-  soundscape.drawStartLine();
   soundscape.render();
+  soundscape.drawStartLine();
+  
+  // never did an equals equals
+  // next step is to figure out when exactly I can just do the -= yScale only once
+  if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y == clearThreshold) {
+    yIncrement -= yScale;
+  }
   
   if (soundscape.lastFrame.get(soundscape.lastFrame.size() - 1).y >= clearThreshold) {
     soundscape.soundscapeVectors.remove(0);
-    soundscape.sb = true;
+    soundscape.shiftBackward();
   }
-  
-   if (soundscape.sb == true) {
-     soundscape.shiftBackward();
-   }
-  
-
-
-  
   soundscape.lastFrame.clear();
+  yIncrement += yScale;
 }
 
 class Soundscape {
 
   ArrayList<ArrayList<PVector>> soundscapeVectors = new ArrayList<ArrayList<PVector>>(); 
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
-  boolean sb = false;
+  boolean initialYShift = false;
   
   void render() {
     
@@ -106,7 +113,7 @@ class Soundscape {
     stroke(255, 40);
     
     // center in the middle
-    translate(width / 2, (height / 2) - (height * 0.20), 0);
+    translate(width / 2, (height / 2) - (height * 0.15), 0);
     rotateX(PI/3);
     rotateY(radians(-5));
     rotateZ(radians(35));
@@ -136,7 +143,13 @@ class Soundscape {
   }
   
   void shiftBackward() {
-    //translate(0, yScale);
+
+    // to sync up the next y-axis start, we must shift back just once
+    if (!initialYShift) {
+       yIncrement -= yScale;
+       initialYShift = true;
+    }
+    
     for (ArrayList<PVector> fftFrame : soundscapeVectors) {
       for (PVector fftVector : fftFrame) {
         fftVector.y -= yScale;
@@ -150,9 +163,9 @@ class Soundscape {
     for (int i = 0; i < fft.avgSize(); i++) {
       PVector vector = new PVector(
         i * xScale,
-        frameCount * yScale,
-        fft.getAvg(i) * i / 12
-        //fft.getAvg(i) * i / 2
+        yIncrement * yScale,
+        // multiply by i to somewhat undo the logaritmic pattern, then muffle how big the peaks are
+        fft.getAvg(i) * i / zMuffle 
       );
       fftFrame.add(vector);
       lastFrame.add(vector);
