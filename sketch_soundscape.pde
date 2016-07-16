@@ -14,15 +14,16 @@ LeapMotion             leap;
 Soundscape             soundscape;
 
 int     startHeight;
-float   yScale = 2.5;
+float   yScale = 4;
 int     xScale;
 float   removalThreshold;
 float   yIncrement = 0;
-float   zMuffle = 15; // how much to mute the z scale by
+float   zMuffle = 15; // factor to shrink the z scale by
 PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 
 void setup() {
   fullScreen(P3D, 2);
+  //size(1400, 800, P3D);
   background(0);
   
   //song = minim.getLineIn();  // >>>>>>>> when using computer audio input
@@ -136,7 +137,7 @@ class Soundscape {
     for (int i = 0; i < fft.avgSize(); i++) {
       PVector vector = new PVector(
           i * xScale, 
-          yIncrement * yScale, 
+          yIncrement + yScale, 
           // multiply by i to somewhat undo the logarithmic curve
           fft.getAvg(i) * i / zMuffle
         );
