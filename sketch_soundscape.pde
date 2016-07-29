@@ -39,9 +39,9 @@ float xRotate;
 float yRotate;
 float zRotate;
 
-float xDefaultTranslate;
-float yDefaultTranslate;
-float zDefaultTranslate;
+float xTranslateDefault;
+float yTranslateDefault;
+float zTranslateDefault;
 
 // translation configurations for non-default mode
 // when user hand is in play
@@ -72,29 +72,29 @@ void setup() {
   // second param dictates how many bands to split it into
   fft.logAverages( 20, 7 );
   xScale = int((width / 3 ) / fft.avgSize());
-
-  leap = new LeapMotion(this);
   
   xRotate = xRotateDefault;
   yRotate = yRotateDefault;
   zRotate = zRotateDefault;
   
-  xDefaultTranslate = width / 2;  // 600
-  yDefaultTranslate = (height / 2) - (height * 0.25);
-  zDefaultTranslate = 0;
+  xTranslateDefault = width / 2;  // 600
+  yTranslateDefault = (height / 2) - (height * 0.25);
+  zTranslateDefault = 0;
   
-  xTranslateHand = ((width - xScale * fft.avgSize()) / 2); 
-  println(xTranslateHand);
+  xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 2; 
   yTranslateHand = -height * 0.25;
   zTranslateHand = 0;
   
-  xTranslate = xDefaultTranslate;
-  yTranslate = yDefaultTranslate;
-  zTranslate = zDefaultTranslate;
+  xTranslate = xTranslateDefault;
+  yTranslate = yTranslateDefault;
+  zTranslate = zTranslateDefault;
   
-  soundscape = new Soundscape();
   // point to start clearing back of fftFrames to create the illusion of movement
   removalThreshold = height - (height * 0.45);
+ 
+  leap = new LeapMotion(this);
+  soundscape = new Soundscape();
+ 
 }
 
 void draw() {
@@ -157,7 +157,7 @@ class Soundscape {
     //);
     
     translate(
-      xTranslateHand * 2,
+      xTranslate,
       yTranslate,//(height / 2) - (height * 0.25), 
       0//zTranslate
     );
@@ -185,8 +185,8 @@ class Soundscape {
         zRotate++;
       }
       
-      if (xTranslate > xTranslateHand) {
-        xTranslate--;
+      if (xTranslate < xTranslateHand) {
+        xTranslate += translateChangeScale;
       }
  
        
@@ -202,6 +202,10 @@ class Soundscape {
       
       if (zRotate > zRotateDefault) {
         zRotate--;
+      }
+      
+      if (xTranslate > xTranslateDefault) {
+        xTranslate -= translateChangeScale;
       }
 
     }
