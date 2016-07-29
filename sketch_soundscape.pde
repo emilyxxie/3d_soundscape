@@ -108,6 +108,8 @@ class Soundscape {
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
   boolean shiftForward = false;
 
+
+
   void render(float handHeight) {
 
     strokeWeight(1);
@@ -125,17 +127,34 @@ class Soundscape {
     //translate(width / 2 + (width * 0.05), height / 2 - (height * 0.20));
     
     // configuration during default mode
+    
+    
+    rotateX(radians(xRotate));
+    rotateY(radians(yRotate));
+    rotateZ(radians(zRotate));
+    println(yRotate);
 
     if (leap.getHands().size() > 0) {
+      if (zRotate < zHandRotateEnd) {
+        zRotate++;
+      }
       
+      if (xRotate < xHandRotateEnd) {
+        xRotate++;
+      }
       
-      rotateX(radians(xHandRotateEnd));
-      rotateY(radians(yHandRotateEnd));
-      rotateZ(radians(zHandRotateEnd));
+      if (yRotate < yHandRotateEnd) {
+        yRotate++;
+      }
+      //rotateY(5);
+      
+      //rotateX(radians(xHandRotateEnd));
+      //rotateY(radians(yHandRotateEnd));
+      //rotateZ(radians(zHandRotateEnd));
       
       translate(
         -200, 
-        -height * 1.05, 
+        -height * 1.05,
         0
        );
        
@@ -143,9 +162,6 @@ class Soundscape {
    
       
 
-    rotateX(radians(xRotate));
-    rotateY(radians(yRotate));
-    rotateZ(radians(zRotate));
     }
 
      // originally used -- jot anykore
