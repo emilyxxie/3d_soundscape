@@ -39,16 +39,25 @@ float xRotate;
 float yRotate;
 float zRotate;
 
+float xDefaultTranslate;
+float yDefaultTranslate;
+float zDefaultTranslate;
+
 // translation configurations for non-default mode
 // when user hand is in play
 float xTranslateHand;
+float yTranslateHand;
+float zTranslateHand;
+
+float xTranslate;
+float yTranslate;
+float zTranslate;
+
+float translateChangeScale = 3;
 
 void setup() {
   fullScreen(P3D);
-  
-  
-  
-  //size(1400, 800, P3D);
+  //size(1200, 800, P3D);
   background(0);
   
   minim = new Minim(this);
@@ -69,8 +78,19 @@ void setup() {
   xRotate = xRotateDefault;
   yRotate = yRotateDefault;
   zRotate = zRotateDefault;
-
-  xTranslateHand = (width - (xScale * fft.avgSize()) / 2);
+  
+  xDefaultTranslate = width / 2;  // 600
+  yDefaultTranslate = (height / 2) - (height * 0.25);
+  zDefaultTranslate = 0;
+  
+  xTranslateHand = ((width - xScale * fft.avgSize()) / 2); 
+  println(xTranslateHand);
+  yTranslateHand = -height * 0.25;
+  zTranslateHand = 0;
+  
+  xTranslate = xDefaultTranslate;
+  yTranslate = yDefaultTranslate;
+  zTranslate = zDefaultTranslate;
   
   soundscape = new Soundscape();
   // point to start clearing back of fftFrames to create the illusion of movement
@@ -130,10 +150,16 @@ class Soundscape {
     //  0
     //);
     
+    //translate(
+    //  xTranslate,
+    //  //yTranslate,//(height / 2) - (height * 0.25), 
+    //  zTranslate
+    //);
+    
     translate(
-      width / 2, 
-      (height / 2) - (height * 0.25), 
-      0
+      xTranslateHand * 2,
+      yTranslate,//(height / 2) - (height * 0.25), 
+      0//zTranslate
     );
 
     //console.log(width / 2);
@@ -148,7 +174,7 @@ class Soundscape {
     if (leap.getHands().size() > 0) {
       
       if (xRotate < xRotateHand) {
-        xRotate++;
+        xRotate++; 
       }
       
       if (yRotate < yRotateHand) {
@@ -158,15 +184,14 @@ class Soundscape {
       if (zRotate < zRotateHand) {
         zRotate++;
       }
-     
-      translate(
-        -width / 2,
-        -height * 1.05,
-        0
-       );
+      
+      if (xTranslate > xTranslateHand) {
+        xTranslate--;
+      }
+ 
        
     } else {
-
+     
       if (xRotate > xRotateDefault) {
         xRotate--;
       }
