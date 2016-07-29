@@ -31,12 +31,15 @@ float zRotate = 35;
 
 float xHandRotateEnd = 68;
 float xHandRotateCurrent = 0;
+float xHandRotateDiff;
 
 float zHandRotateEnd = 180;
 float zHandRotateCurrent = 0;
+float zHandRotateDiff;
 
 float yHandRotateEnd = 0;
 float yHandRotateCurrent = 0;
+float yHandRotateDiff;
 
 //float yRotation
 
@@ -137,7 +140,9 @@ class Soundscape {
        );
        
     } else {
-    
+   
+      
+
     rotateX(radians(xRotate));
     rotateY(radians(yRotate));
     rotateZ(radians(zRotate));
