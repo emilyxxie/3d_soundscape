@@ -21,31 +21,34 @@ float   yIncrement = 0;
 float   zMuffle = 20; // factor to shrink the z scale by
 PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 
-
 // these are the values we'd like to end up with
 // once the leap motion is in play
+// camera configurations for default mode
+float xRotateDefault = 60;
+float yRotateDefault = -5;
+float zRotateDefault = 35;
 
-float xRotate = 60;
-float yRotate = -5;
-float zRotate = 35;
+// camera configurations for non-default mode
+// when user hand is in play
+float xRotateHand = 68;
+float yRotateHand = 0;
+float zRotateHand = 180;
 
-float xHandRotateEnd = 68;
-float xHandRotateCurrent = 0;
-float xHandRotateDiff;
+// value holding the rotation;
+float xRotate;
+float yRotate;
+float zRotate;
 
-float zHandRotateEnd = 180;
-float zHandRotateCurrent = 0;
-float zHandRotateDiff;
-
-float yHandRotateEnd = 0;
-float yHandRotateCurrent = 0;
-float yHandRotateDiff;
-
-//float yRotation
+// translation configurations for non-default mode
+// when user hand is in play
+float xTranslateHand;
 
 void setup() {
-  //fullScreen(P3D);
-  size(1400, 800, P3D);
+  fullScreen(P3D);
+  
+  
+  
+  //size(1400, 800, P3D);
   background(0);
   
   minim = new Minim(this);
@@ -59,9 +62,16 @@ void setup() {
   // first param indicates minimum bandwidth
   // second param dictates how many bands to split it into
   fft.logAverages( 20, 7 );
-  xScale = int((width / 3.5 ) / fft.avgSize());
+  xScale = int((width / 3 ) / fft.avgSize());
 
   leap = new LeapMotion(this);
+  
+  xRotate = xRotateDefault;
+  yRotate = yRotateDefault;
+  zRotate = zRotateDefault;
+
+  xTranslateHand = (width - (xScale * fft.avgSize()) / 2);
+  
   soundscape = new Soundscape();
   // point to start clearing back of fftFrames to create the illusion of movement
   removalThreshold = height - (height * 0.45);
@@ -108,59 +118,66 @@ class Soundscape {
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
   boolean shiftForward = false;
 
-
-
   void render(float handHeight) {
 
     strokeWeight(1);
     stroke(255, 50);
 
     // center in the middle-ish for 16:9 aspect ratio
+    //translate(
+    //  width / 2 - (width * 0.02), 
+    //  (height / 2) - (height * 0.25), 
+    //  0
+    //);
+    
     translate(
-      width / 2 - (width * 0.02), 
+      width / 2, 
       (height / 2) - (height * 0.25), 
       0
     );
 
+    //console.log(width / 2);
      
     // slightly better translate option for Macs
     //translate(width / 2 + (width * 0.05), height / 2 - (height * 0.20));
-    
-    // configuration during default mode
-    
-    
+   
     rotateX(radians(xRotate));
     rotateY(radians(yRotate));
     rotateZ(radians(zRotate));
-    println(yRotate);
 
     if (leap.getHands().size() > 0) {
-      if (zRotate < zHandRotateEnd) {
-        zRotate++;
-      }
       
-      if (xRotate < xHandRotateEnd) {
+      if (xRotate < xRotateHand) {
         xRotate++;
       }
       
-      if (yRotate < yHandRotateEnd) {
+      if (yRotate < yRotateHand) {
         yRotate++;
       }
-      //rotateY(5);
       
-      //rotateX(radians(xHandRotateEnd));
-      //rotateY(radians(yHandRotateEnd));
-      //rotateZ(radians(zHandRotateEnd));
-      
+      if (zRotate < zRotateHand) {
+        zRotate++;
+      }
+     
       translate(
-        -200, 
+        -width / 2,
         -height * 1.05,
         0
        );
        
     } else {
-   
+
+      if (xRotate > xRotateDefault) {
+        xRotate--;
+      }
       
+      if (yRotate > yRotateDefault) {
+        yRotate--;
+      }
+      
+      if (zRotate > zRotateDefault) {
+        zRotate--;
+      }
 
     }
 
