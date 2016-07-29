@@ -24,17 +24,25 @@ PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 
 // these are the values we'd like to end up with
 // once the leap motion is in play
-float xHandRotate = 2.9;
+
+float xRotate = 60;
+float yRotate = -5;
+float zRotate = 35;
+
+float xHandRotateEnd = 68;
 float xHandRotateCurrent = 0;
 
-float zHandRotationEnd = 180;
-float zHandRotationCurrent = 0;
+float zHandRotateEnd = 180;
+float zHandRotateCurrent = 0;
+
+float yHandRotateEnd = 0;
+float yHandRotateCurrent = 0;
 
 //float yRotation
 
 void setup() {
-  fullScreen(P3D);
-  //size(1400, 800, P3D);
+  //fullScreen(P3D);
+  size(1400, 800, P3D);
   background(0);
   
   minim = new Minim(this);
@@ -50,19 +58,18 @@ void setup() {
   fft.logAverages( 20, 7 );
   xScale = int((width / 3.5 ) / fft.avgSize());
 
-  //leap = new LeapMotion(this);
+  leap = new LeapMotion(this);
   soundscape = new Soundscape();
   // point to start clearing back of fftFrames to create the illusion of movement
   removalThreshold = height - (height * 0.45);
 }
 
 void draw() {
-  //for(Hand hand : leap.getHands()){
-  //  hCoordinates = hand.getPosition();//-1*hand.getPitch();     
-  //}
+  for(Hand hand : leap.getHands()){
+    hCoordinates = hand.getPosition();//-1*hand.getPitch();     
+  }
  
   //float handHeight = map(hCoordinates.y, -1000, 1000, 0.00001, 4);
-  //println(handHeight);
  
   float handHeight = 1;
   background(0);
@@ -108,26 +115,33 @@ class Soundscape {
       width / 2 - (width * 0.02), 
       (height / 2) - (height * 0.25), 
       0
-     );
+    );
 
      
     // slightly better translate option for Macs
     //translate(width / 2 + (width * 0.05), height / 2 - (height * 0.20));
     
-    //rotateX(PI/3);
-    //rotateY(radians(-5));
-    //rotateZ(radians(35));
-    
-    rotateX(PI/2.65);
-    rotateZ(radians(180));
+    // configuration during default mode
 
+    if (leap.getHands().size() > 0) {
+      
+      
+      rotateX(radians(xHandRotateEnd));
+      rotateY(radians(yHandRotateEnd));
+      rotateZ(radians(zHandRotateEnd));
+      
+      translate(
+        -200, 
+        -height * 1.05, 
+        0
+       );
+       
+    } else {
     
-    translate(
-      -200, 
-      -height * 1.05, 
-      0
-     );
-    println(radians(-5));
+    rotateX(radians(xRotate));
+    rotateY(radians(yRotate));
+    rotateZ(radians(zRotate));
+    }
 
      // originally used -- jot anykore
     //translate(-200, -height * 0.90, -10);
