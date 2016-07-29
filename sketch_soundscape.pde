@@ -5,8 +5,8 @@ import ddf.minim.*;
 import java.util.*; 
 //import processing.sound.*;
 
-//AudioInput song; // >>>>>> use whatever is playing on computer
-AudioPlayer            song;
+AudioInput song; // >>>>>> use whatever is playing on computer
+//AudioPlayer            song;
 Minim                  minim;
 ddf.minim.analysis.FFT fft;
 BeatDetect             beat;
@@ -14,29 +14,40 @@ LeapMotion             leap;
 Soundscape             soundscape;
 
 int     startHeight;
-float   yScale = 4;
+float   yScale = 5;
 int     xScale;
 float   removalThreshold;
 float   yIncrement = 0;
-float   zMuffle = 15; // factor to shrink the z scale by
+float   zMuffle = 20; // factor to shrink the z scale by
 PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 
+
+// these are the values we'd like to end up with
+// once the leap motion is in play
+float xHandRotate = 2.9;
+float xHandRotateCurrent = 0;
+
+float zHandRotationEnd = 180;
+float zHandRotationCurrent = 0;
+
+//float yRotation
+
 void setup() {
-  fullScreen(P3D, 2);
+  fullScreen(P3D);
   //size(1400, 800, P3D);
   background(0);
   
-  //song = minim.getLineIn();  // >>>>>>>> when using computer audio input
   minim = new Minim(this);
-  song = minim.loadFile("flashy_flashy.mp3", 1024);
-  song.play();
+  song = minim.getLineIn();  // >>>>>>>> when using computer audio input
+  //song = minim.loadFile("flashy_flashy.mp3", 1024);
+  //song.play();
   
   fft = new FFT( song.bufferSize(), song.sampleRate());
   
   // calculate log averages
   // first param indicates minimum bandwidth
   // second param dictates how many bands to split it into
-  fft.logAverages( 10, 5 );
+  fft.logAverages( 20, 7 );
   xScale = int((width / 3.5 ) / fft.avgSize());
 
   //leap = new LeapMotion(this);
@@ -50,7 +61,8 @@ void draw() {
   //  hCoordinates = hand.getPosition();//-1*hand.getPitch();     
   //}
  
- //float handHeight = map(hCoordinates.y, -1000, 1000, 0.00001, 4);
+  //float handHeight = map(hCoordinates.y, -1000, 1000, 0.00001, 4);
+  //println(handHeight);
  
   float handHeight = 1;
   background(0);
@@ -89,16 +101,36 @@ class Soundscape {
   void render(float handHeight) {
 
     strokeWeight(1);
-    stroke(255, 40);
+    stroke(255, 50);
 
     // center in the middle-ish for 16:9 aspect ratio
-    translate(width / 2 - (width * 0.02), (height / 2) - (height * 0.25), 0);
+    translate(
+      width / 2 - (width * 0.02), 
+      (height / 2) - (height * 0.25), 
+      0
+     );
+
+     
     // slightly better translate option for Macs
     //translate(width / 2 + (width * 0.05), height / 2 - (height * 0.20));
     
-    rotateX(PI/3);
-    rotateY(radians(-5));
-    rotateZ(radians(35));
+    //rotateX(PI/3);
+    //rotateY(radians(-5));
+    //rotateZ(radians(35));
+    
+    rotateX(PI/2.65);
+    rotateZ(radians(180));
+
+    
+    translate(
+      -200, 
+      -height * 1.05, 
+      0
+     );
+    println(radians(-5));
+
+     // originally used -- jot anykore
+    //translate(-200, -height * 0.90, -10);
 
     int soundscapeFramesIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeFrames) {
