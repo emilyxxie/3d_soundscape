@@ -27,13 +27,13 @@ PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 // these are the values we'd like to end up with
 // once the leap motion is in play
 // camera configurations for default mode
-float xRotateDefault = 60;
+float xRotateDefault = 70;
 float yRotateDefault = -5;
 float zRotateDefault = 35;
 
 // camera configurations for non-default mode
 // when user hand is in play
-float xRotateHand = 65;//90;//50;////68;
+float xRotateHand = 88;//90;//50;////68;
 float yRotateHand = 0;
 float zRotateHand = 180;
 
@@ -59,8 +59,8 @@ float zTranslate;
 float translateChangeScale = 1; // this is why it moves slightly each time
 
 void setup() {
-  //fullScreen(P3D);
-  size(1200, 800, P3D);
+  fullScreen(P3D);
+  //size(1200, 800, P3D);
   background(0);
   
   minim = new Minim(this);
@@ -86,8 +86,8 @@ void setup() {
   zTranslateDefault = 0;
   
   xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 2; 
-  yTranslateHand = height * 0.60;//height * 0.80;
-  zTranslateHand = 600;  
+  yTranslateHand = height * 0.60;//height * 0.66;//height * 0.80;
+  zTranslateHand = 780; 
   
   xTranslate = xTranslateDefault;
   yTranslate = yTranslateDefault;
@@ -147,24 +147,6 @@ class Soundscape {
     strokeWeight(1);
     stroke(255, 50);
 
-    // center in the middle-ish for 16:9 aspect ratio
-    //translate(
-    //  width / 2 - (width * 0.02), 
-    //  (height / 2) - (height * 0.25), 
-    //  0
-    //);
-    
-    
-    // slightly better translate option for Macs
-    //translate(width / 2 + (width * 0.05), height / 2 - (height * 0.20));
-   
-    
-    //translate(
-    //  xTranslate,
-    //  //yTranslate,//(height / 2) - (height * 0.25), 
-    //  zTranslate
-    //);
-    
     translate(
       xTranslateHand,
       yTranslateHand,
