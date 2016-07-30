@@ -27,15 +27,15 @@ PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 // these are the values we'd like to end up with
 // once the leap motion is in play
 // camera configurations for default mode
-float xRotateDefault = 70;
-float yRotateDefault = -5;
-float zRotateDefault = 35;
+float xRotateDefault;
+float yRotateDefault;
+float zRotateDefault;
 
 // camera configurations for non-default mode
 // when user hand is in play
-float xRotateHand = 88;//90;//50;////68;
-float yRotateHand = 0;
-float zRotateHand = 180;
+float xRotateHand;
+float yRotateHand;
+float zRotateHand;
 
 // value holding the rotation;
 float xRotate;
@@ -60,7 +60,7 @@ float translateChangeScale = 1; // this is why it moves slightly each time
 
 void setup() {
   fullScreen(P3D);
-  //size(1200, 800, P3D);
+  size(1200, 675, P3D);
   background(0);
   
   minim = new Minim(this);
@@ -77,28 +77,37 @@ void setup() {
   xScale = int((width / 3 ) / fft.avgSize());
   yScale = yScaleDefault;
   
-  xRotate = xRotateDefault;
-  yRotate = yRotateDefault;
-  zRotate = zRotateDefault;
-  
+  xRotateDefault = 70;
+  yRotateDefault = -5;
+  zRotateDefault = 35;
+
+  xRotateHand = 88;
+  yRotateHand = 0;
+  zRotateHand = 180;
+
   xTranslateDefault = width / 2;
   yTranslateDefault = (height / 2) - (height * 0.25);
   zTranslateDefault = 0;
   
   xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 2; 
-  yTranslateHand = height * 0.60;//height * 0.66;//height * 0.80;
-  zTranslateHand = 780; 
+  yTranslateHand = height * 0.60;
   
-  xTranslate = xTranslateDefault;
-  yTranslate = yTranslateDefault;
-  zTranslate = zTranslateDefault;
+  float screen = (float)width / height;
+  float aspectRatio = 16.00 / 9.00;
+  
+  // optimal configurations for a 16:9 aspect ratio
+  if (Math.abs(screen - aspectRatio) == 0) {
+    zTranslateHand = 530;
+  } else {
+    // macbook pro, 16:10
+    zTranslateHand = 780;
+  }
   
   // point to start clearing back of fftFrames to create the illusion of movement
   removalThreshold = height - (height * 0.45);
- 
+
   leap = new LeapMotion(this);
   soundscape = new Soundscape();
- 
 }
 
 void draw() {
