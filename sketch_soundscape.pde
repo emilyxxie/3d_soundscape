@@ -15,7 +15,12 @@ Soundscape             soundscape;
 
 int     startHeight;
 float   yScale;
-float   yScaleDefault = 12;//5;
+float   yScaleDefault = 5;
+
+float   xScaleMultiplierDefault = 3.5;
+float   xScaleMultiplerHand = 3;
+float   xScaleMultiplier;
+
 float   yScaleHand = 12;
 
 int     xScale;
@@ -59,7 +64,7 @@ float zTranslate;
 float translateChangeScale = 1; // this is why it moves slightly each time
 
 void setup() {
-  fullScreen(P3D);
+  //fullScreen(P3D);
   size(1200, 675, P3D);
   background(0);
   
@@ -74,10 +79,11 @@ void setup() {
   // first param indicates minimum bandwidth
   // second param dictates how many bands to split it into
   fft.logAverages( 20, 7 );
-  xScale = int((width / 3 ) / fft.avgSize());
+  xScale = int((width / 3.5 ) / fft.avgSize());
+  
   yScale = yScaleDefault;
   
-  xRotateDefault = 70;
+  xRotateDefault = 60;
   yRotateDefault = -5;
   zRotateDefault = 35;
 
@@ -85,12 +91,13 @@ void setup() {
   yRotateHand = 0;
   zRotateHand = 180;
 
-  xTranslateDefault = width / 2;
+  xTranslateDefault = width / 2 + (width * 0.05);
   yTranslateDefault = (height / 2) - (height * 0.25);
   zTranslateDefault = 0;
   
   xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 2; 
   yTranslateHand = height * 0.60;
+  
   
   float screen = (float)width / height;
   float aspectRatio = 16.00 / 9.00;
@@ -102,6 +109,14 @@ void setup() {
     // macbook pro, 16:10
     zTranslateHand = 780;
   }
+  
+  xRotate = xRotateDefault;
+  yRotate = yRotateDefault;
+  zRotate = zRotateDefault;
+  
+  xTranslate = xTranslateDefault;
+  yTranslate = yTranslateDefault;
+  zTranslate = zTranslateDefault;
   
   // point to start clearing back of fftFrames to create the illusion of movement
   removalThreshold = height - (height * 0.45);
@@ -156,26 +171,25 @@ class Soundscape {
     strokeWeight(1);
     stroke(255, 50);
 
-    translate(
-      xTranslateHand,
-      yTranslateHand,
-      zTranslateHand
-     );
-    
-    rotateX(radians(xRotateHand));
-    rotateY(radians(yRotateHand));
-    rotateZ(radians(zRotateHand));
-    
-    
     //translate(
-    //  xTranslate,
-    //  yTranslate,
-    //  zTranslate
-    //);
+    //  xTranslateHand,
+    //  yTranslateHand,
+    //  zTranslateHand
+    // );
+    
+    //rotateX(radians(xRotateHand));
+    //rotateY(radians(yRotateHand));
+    //rotateZ(radians(zRotateHand));
+    
+    translate(
+      xTranslate,
+      yTranslate,
+      zTranslate
+    );
 
-    //rotateX(radians(xRotate));
-    //rotateY(radians(yRotate));
-    //rotateZ(radians(zRotate));
+    rotateX(radians(xRotate));
+    rotateY(radians(yRotate));
+    rotateZ(radians(zRotate));
 
     if (leap.getHands().size() > 0) {
       
@@ -230,9 +244,6 @@ class Soundscape {
       }
 
     }
-
-     // originally used -- jot anykore
-    //translate(-200, -height * 0.90, -10);
 
     int soundscapeFramesIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeFrames) {
