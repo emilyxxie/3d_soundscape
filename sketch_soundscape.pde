@@ -13,15 +13,9 @@ BeatDetect             beat;
 LeapMotion             leap;
 Soundscape             soundscape;
 
-int     startHeight;
-float   yScale;
 float   yScaleDefault = 5;
-
-float   xScaleMultiplierDefault = 3.5;
-float   xScaleMultiplerHand = 3;
-float   xScaleMultiplier;
-
 float   yScaleHand = 12;
+float   yScale;
 
 int     xScale;
 float   removalThreshold;
@@ -61,11 +55,11 @@ float xTranslate;
 float yTranslate;
 float zTranslate;
 
-float translateChangeScale = 1; // this is why it moves slightly each time
+float translateChangeScale = 10; // this is why it moves slightly each time
 
 void setup() {
-  //fullScreen(P3D);
-  size(1200, 675, P3D);
+  //fullScreen(P3D);  // to do: make it look nicer on full screen
+  size(1200, 675, P3D); 
   background(0);
   
   minim = new Minim(this);
@@ -74,12 +68,11 @@ void setup() {
   //song.play();
   
   fft = new FFT( song.bufferSize(), song.sampleRate());
-  
   // calculate log averages
   // first param indicates minimum bandwidth
   // second param dictates how many bands to split it into
   fft.logAverages( 20, 7 );
-  xScale = int((width / 3.5 ) / fft.avgSize());
+  xScale = int((width / 3 ) / fft.avgSize());
   
   yScale = yScaleDefault;
   
@@ -91,13 +84,17 @@ void setup() {
   yRotateHand = 0;
   zRotateHand = 180;
 
-  xTranslateDefault = width / 2 + (width * 0.05);
-  yTranslateDefault = (height / 2) - (height * 0.25);
+  // for a 3.5 x
+  // xTranslateDefault = width / 2 + (width * 0.05); 
+  //yTranslateDefault = (height / 2) - (height * 0.25);
+  
+  xTranslateDefault = width / 2 - (width * 0.02);
+  yTranslateDefault = (height / 2) - (height * 0.30);
   zTranslateDefault = 0;
   
   xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 2; 
+  //xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 1.75; 
   yTranslateHand = height * 0.60;
-  
   
   float screen = (float)width / height;
   float aspectRatio = 16.00 / 9.00;
@@ -170,16 +167,6 @@ class Soundscape {
 
     strokeWeight(1);
     stroke(255, 50);
-
-    //translate(
-    //  xTranslateHand,
-    //  yTranslateHand,
-    //  zTranslateHand
-    // );
-    
-    //rotateX(radians(xRotateHand));
-    //rotateY(radians(yRotateHand));
-    //rotateZ(radians(zRotateHand));
     
     translate(
       xTranslate,
@@ -190,6 +177,16 @@ class Soundscape {
     rotateX(radians(xRotate));
     rotateY(radians(yRotate));
     rotateZ(radians(zRotate));
+    
+    //translate(
+    //  xTranslateHand,
+    //  yTranslateHand,
+    //  zTranslateHand
+    //);
+    
+    //rotateX(radians(xRotateHand));
+    //rotateY(radians(yRotateHand));
+    //rotateZ(radians(zRotateHand));
 
     if (leap.getHands().size() > 0) {
       
@@ -207,15 +204,22 @@ class Soundscape {
       
       if (xTranslate < xTranslateHand) {
         xTranslate += translateChangeScale;
+        xTranslate = constrain(xTranslate, 0, xTranslateHand);
       }
       
       if (yTranslate < yTranslateHand) {
         yTranslate += translateChangeScale;
+        yTranslate = constrain(yTranslate, 0, yTranslateHand);
       }
       
       if (zTranslate < zTranslateHand) {
         zTranslate += translateChangeScale;
-      } 
+        zTranslate = constrain(zTranslate, 0, zTranslateHand);
+      }
+      
+      if (yScale < yScaleHand) {
+        yScale += 0.5;
+      }
        
     } else {
      
@@ -233,14 +237,22 @@ class Soundscape {
       
       if (xTranslate > xTranslateDefault) {
         xTranslate -= translateChangeScale;
+        xTranslate = constrain(xTranslate, xTranslateDefault, 100000);
       }
 
       if (yTranslate > yTranslateDefault) {
         yTranslate -= translateChangeScale;
+        yTranslate = constrain(yTranslate, yTranslateDefault, 100000);
       }
       
       if (zTranslate > zTranslateDefault) {
         zTranslate -= translateChangeScale;
+        zTranslate = constrain(zTranslate, zTranslateDefault, 100000);
+      }
+      
+      if (yScale > yScaleDefault) {
+        yScale -= 0.5;
+        yScale = constrain(yScale, yScaleDefault, 100);
       }
 
     }
