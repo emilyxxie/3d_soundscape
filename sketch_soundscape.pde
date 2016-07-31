@@ -14,7 +14,7 @@ LeapMotion             leap;
 Soundscape             soundscape;
 
 float   yScaleDefault = 5;
-float   yScaleHand = 12;
+float   yScaleHand = 15;
 float   yScale;
 
 int     xScale;
@@ -23,29 +23,25 @@ float   yIncrement = 0;
 float   zMuffle = 20; // factor to shrink the z scale by
 PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 
-// these are the values we'd like to end up with
-// once the leap motion is in play
 // camera configurations for default mode
 float xRotateDefault;
 float yRotateDefault;
 float zRotateDefault;
 
-// camera configurations for non-default mode
 // when user hand is in play
 float xRotateHand;
 float yRotateHand;
 float zRotateHand;
 
-// value holding the rotation;
 float xRotate;
 float yRotate;
 float zRotate;
 
+// translation config for default mode
 float xTranslateDefault;
 float yTranslateDefault;
 float zTranslateDefault;
 
-// translation configurations for non-default mode
 // when user hand is in play
 float xTranslateHand;
 float yTranslateHand;
@@ -55,25 +51,28 @@ float xTranslate;
 float yTranslate;
 float zTranslate;
 
-float translateChangeScale = 10; // this is why it moves slightly each time
+float translateChangeScale = 3;
+float rotateChangeScale = 0.6;
 
 void setup() {
-  //fullScreen(P3D);  // to do: make it look nicer on full screen
-  size(1200, 675, P3D); 
+  fullScreen(P3D);  // to do: make it look nicer on full screen
+  //size(1200, 675, P3D); 
   background(0);
   
   minim = new Minim(this);
-  song = minim.getLineIn();  // >>>>>>>> when using computer audio input
-  //song = minim.loadFile("flashy_flashy.mp3", 1024);
+  // when using computer audio input
+  song = minim.getLineIn();
+  
+  // // when using pre-loaded songs
+  //song = minim.loadFile("gone_too_soon.mp3", 1024);
   //song.play();
   
   fft = new FFT( song.bufferSize(), song.sampleRate());
-  // calculate log averages
   // first param indicates minimum bandwidth
-  // second param dictates how many bands to split it into
+  // second dictates how many bands to split it into
   fft.logAverages( 20, 7 );
-  xScale = int((width / 3 ) / fft.avgSize());
   
+  xScale = int((width / 3 ) / fft.avgSize());
   yScale = yScaleDefault;
   
   xRotateDefault = 60;
@@ -84,27 +83,30 @@ void setup() {
   yRotateHand = 0;
   zRotateHand = 180;
 
-  // for a 3.5 x
-  // xTranslateDefault = width / 2 + (width * 0.05); 
-  //yTranslateDefault = (height / 2) - (height * 0.25);
-  
-  xTranslateDefault = width / 2 - (width * 0.02);
-  yTranslateDefault = (height / 2) - (height * 0.30);
+  // TODO: 
+  // for a 3.5 x grid. will want to try to adapt for x conversion from 3.5 to 4 with camera change for a greater effect...
+  // this will involve using an "if" in the loop and multiplying across the x axis
+  //xTranslateDefault = width / 2 + (width * 0.05); 
+  //yTranslateDefault = (height / 2) - (height * 0.30);
+
   zTranslateDefault = 0;
-  
   xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 2; 
-  //xTranslateHand = ((width - xScale * fft.avgSize()) / 2) * 1.75; 
   yTranslateHand = height * 0.60;
   
   float screen = (float)width / height;
   float aspectRatio = 16.00 / 9.00;
   
-  // optimal configurations for a 16:9 aspect ratio
-  if (Math.abs(screen - aspectRatio) == 0) {
-    zTranslateHand = 530;
+  if (Math.abs(screen - aspectRatio) == 0) {   
+    // optimal configurations for a 16:9 aspect ratio
+    xTranslateDefault = width / 2 - (width * 0.01);
+    yTranslateDefault = (height / 2) - (height * 0.28);
+    zTranslateHand    = 530;
   } else {
     // macbook pro, 16:10
-    zTranslateHand = 780;
+    //zTranslateHand = 780;
+    xTranslateDefault = width / 2 - (width * 0.01);
+    yTranslateDefault = (height / 2) - (height * 0.25);
+    zTranslateHand    = 700;
   }
   
   xRotate = xRotateDefault;
@@ -115,7 +117,8 @@ void setup() {
   yTranslate = yTranslateDefault;
   zTranslate = zTranslateDefault;
   
-  // point to start clearing back of fftFrames to create the illusion of movement
+  // point to start clearing back of fftFrames 
+  // to create the illusion movement within landscape "slice"
   removalThreshold = height - (height * 0.45);
 
   leap = new LeapMotion(this);
@@ -123,9 +126,6 @@ void setup() {
 }
 
 void draw() {
-  for(Hand hand : leap.getHands()){
-    hCoordinates = hand.getPosition();//-1*hand.getPitch();     
-  }
  
   //float handHeight = map(hCoordinates.y, -1000, 1000, 0.00001, 4);
  
@@ -168,7 +168,46 @@ class Soundscape {
     strokeWeight(1);
     stroke(255, 50);
     
-    translate(
+    renderCamera();
+    
+    // if all variables are equal to hand settings, this means the leapmotion is in play,
+    // and full transition on all camera angles are complete
+    if (
+        (xRotate == xRotateHand) && (yRotate == yRotateHand) && (zRotate == zRotateHand)
+         && (xTranslate == xTranslateHand) && (yTranslate == yTranslateHand) 
+         && (zTranslate == zTranslateHand)
+      ) {
+      Hand hand = leap.getHands().get(0);
+      PVector handPosition = hand.getPosition();
+      println(handPosition);
+    }
+
+    int soundscapeFramesIndex = 0;
+    for (ArrayList<PVector> fftFrame : soundscapeFrames) {
+      if (soundscapeFramesIndex >= soundscapeFrames.size() - 1) {
+        continue;
+      }
+      int fftFrameIndex = 0;
+      beginShape(TRIANGLE_STRIP);
+      for (PVector fftVector : fftFrame) {
+        if (fftFrameIndex >= fftFrame.size() - 1) {
+          continue;
+        }
+        vertex(fftVector.x, fftVector.y, fftVector.z * handHeight);
+        vertex(
+          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).x, 
+          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).y, 
+          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).z * handHeight
+        );
+        fftFrameIndex++;
+      }
+      endShape();
+      soundscapeFramesIndex++;
+    }
+  }
+  
+  void renderCamera() {
+     translate(
       xTranslate,
       yTranslate,
       zTranslate
@@ -191,15 +230,15 @@ class Soundscape {
     if (leap.getHands().size() > 0) {
       
       if (xRotate < xRotateHand) {
-        xRotate++;
+        xRotate += rotateChangeScale;
       }
       
       if (yRotate < yRotateHand) {
-        yRotate++;
+        yRotate += rotateChangeScale;
       }
       
       if (zRotate < zRotateHand) {
-        zRotate++;
+        zRotate += rotateChangeScale;
       }
       
       if (xTranslate < xTranslateHand) {
@@ -224,15 +263,15 @@ class Soundscape {
     } else {
      
       if (xRotate > xRotateDefault) {
-        xRotate--;
+        xRotate -= rotateChangeScale;
       }
       
       if (yRotate > yRotateDefault) {
-        yRotate--;
+        yRotate -= rotateChangeScale;
       }
       
       if (zRotate > zRotateDefault) {
-        zRotate--;
+        zRotate -= rotateChangeScale;
       }
       
       if (xTranslate > xTranslateDefault) {
@@ -254,30 +293,6 @@ class Soundscape {
         yScale -= 0.5;
         yScale = constrain(yScale, yScaleDefault, 100);
       }
-
-    }
-
-    int soundscapeFramesIndex = 0;
-    for (ArrayList<PVector> fftFrame : soundscapeFrames) {
-      if (soundscapeFramesIndex >= soundscapeFrames.size() - 1) {
-        continue;
-      }
-      int fftFrameIndex = 0;
-      beginShape(TRIANGLE_STRIP);
-      for (PVector fftVector : fftFrame) {
-        if (fftFrameIndex >= fftFrame.size() - 1) {
-          continue;
-        }
-        vertex(fftVector.x, fftVector.y, fftVector.z * handHeight);
-        vertex(
-          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).x, 
-          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).y, 
-          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).z * handHeight
-        );
-        fftFrameIndex++;
-      }
-      endShape();
-      soundscapeFramesIndex++;
     }
   }
 
