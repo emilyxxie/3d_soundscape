@@ -3,7 +3,7 @@ import java.awt.Frame;
 import ddf.minim.analysis.*;
 import ddf.minim.*;
 import java.util.*; 
-
+import java.io.*;
 
 
 import processing.sound.*;
@@ -26,7 +26,7 @@ float   yScale;
 int     xScale;
 float   removalThreshold;
 float   yIncrement = 0;
-float   zMuffle = 20; // factor to shrink the z scale by
+float   zMuffle = 30;// 20; // factor to shrink the z scale by
 
 // camera configurations for default mode
 float xRotateDefault;
@@ -68,10 +68,11 @@ float handYaw;
 float handRoll;
 float handGrab;
 
+float handPitchMultiplier = 0.2;
+float handRollMultiplier = 0.2;
+float handYawMultiplier = 0.5;
 
-float handPitchMultiplier = 0.15;
-float handRollMultiplier = 0.15;
-float handYawMultiplier = 0.6;
+boolean volumeDefault = false;
 
 // grab strength affects volume
 
@@ -206,11 +207,17 @@ class Soundscape {
         handRoll  = hand.getRoll();
         handGrab  = hand.getGrabStrength();
         
-        // to be on the safe side, only do it every 3 frames, to avoid overwhelming
-        if (frameCount % 3 == 0 && handGrab  > 0.3) {
+        // automatically change music back to full volume
+        if (handGrab <= 0.10 && volumeDefault == false) {
+          changeVolume(handGrab);
+          volumeDefault = true;
+        }
+        
+        // only do it every 10 frames, to avoid overwhelming the system
+        if (frameCount % 15 == 0 && handGrab > 0.10) {
+          volumeDefault = false;
           changeVolume(handGrab);
         }
-     
     }
    
     adjustCamera(handPitch, handRoll, handYaw);
@@ -415,76 +422,26 @@ class Soundscape {
 
 void changeVolume(float handGrab) {
 
-  handGrab = map(handGrab, 0, 1, 10, 1);
-  
+  handGrab = map(handGrab, 0.20, 1, 10, 4);  
   // can't manipulate volume from minim library
   // so exec-ing osascript instead
   // this will only work on mac
   // this is hacky---need to clean this up
-  
   // seems like it needs to be a number from 1- 10 for osascript
   String volume = String.format("set volume %f", handGrab);
   String[] cmd = {"osascript", "-e", volume}; 
   
-  // File workingDir = new File("/Users/Emily/Code/Processing/examples/sketch_test");   
+   File workingDir = new File("/Users/Emily/Code/Processing/examples/sketch_test");   
   // where to do execute. pass in full path
   String returnedValues;                                                                    
 
-  // give us some info:
-  println(volume);
-  //println("Running command: " + );
-  //println("Location:        " + workingDir);
-  //println("---------------------------------------------\n");
-  
-  //println();
-  
-  //println();
-
-  // run the command!
-  //try {
-
-  //  // complicated!  basically, we have to load the exec command within Java's Runtime
-  //  // exec asks for 1. command to run, 2. null which essentially tells Processing to 
-  //  // inherit the environment settings from the current setup (I am a bit confused on
-  //  // this so it seems best to leave it), and 3. location to work (full path is best)
-  //  Process p = Runtime.getRuntime().exec(cmd, null, workingDir);
-
-  //  // variable to check if we've received confirmation of the command
-  //  int i = p.waitFor();
-
-  //  // if we have an output, print to screen
-  //  if (i == 0) {
-
-  //    // BufferedReader used to get values back from the command
-  //    BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-  //    // read the output from the command
-  //    while ( (returnedValues = stdInput.readLine ()) != null) {
-  //      println(returnedValues);
-  //    }
-  //  }
-
-  //  // if there are any error messages but we can still get an output, they print here
-  //  else {
-  //    BufferedReader stdErr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-  //    // if something is returned (ie: not null) print the result
-  //    while ( (returnedValues = stdErr.readLine ()) != null) {
-  //      println(returnedValues);
-  //    }
-  //  }
-  //}
-
-  //// if there is an error, let us know
-  //catch (Exception e) {
-  //  println("Error running command!");  
-  //  println(e);
-  //}
-
-  // when done running command, quit
-  //println("\n---------------------------------------------");
-  //println("DONE!");
-  //exit();
+  try {
+    // command, null = inherit porcessing environment, where to execute command
+    Process p = Runtime.getRuntime().exec(cmd, null, workingDir);
+  } catch (Exception e) {
+    println("Error running command!");  
+    println(e);
+  }
   
   
 }
