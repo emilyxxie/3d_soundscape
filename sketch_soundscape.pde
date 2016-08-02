@@ -3,15 +3,21 @@ import java.awt.Frame;
 import ddf.minim.analysis.*;
 import ddf.minim.*;
 import java.util.*; 
-//import processing.sound.*;
 
-AudioInput song; // >>>>>> use whatever is playing on computer
-//AudioPlayer            song;
+
+
+import processing.sound.*;
+AudioIn in; // attempt 2
+
+
+AudioInput             song; // use whatever is playing on computer
+//AudioPlayer            song; // use pre-loaded song
 Minim                  minim;
 ddf.minim.analysis.FFT fft;
 BeatDetect             beat;
 LeapMotion             leap;
 Soundscape             soundscape;
+AudioPlayer            song2;
 
 float   yScaleDefault = 5;
 float   yScaleHand = 15;
@@ -21,7 +27,6 @@ int     xScale;
 float   removalThreshold;
 float   yIncrement = 0;
 float   zMuffle = 20; // factor to shrink the z scale by
-PVector hCoordinates = new PVector(1, 1, 1); // default for absent LeapMotion
 
 // camera configurations for default mode
 float xRotateDefault;
@@ -51,12 +56,28 @@ float xTranslate;
 float yTranslate;
 float zTranslate;
 
+float pitch = 0; // rotation around x-axis
+float yaw = 0; // rotation around y-axis
+float roll = 0; // rotation around z-axis
+
 float translateChangeScale = 3;
 float rotateChangeScale = 0.6;
 
+float handPitch;
+float handYaw;
+float handRoll;
+float handGrab;
+
+
+float handPitchMultiplier = 0.15;
+float handRollMultiplier = 0.15;
+float handYawMultiplier = 0.6;
+
+// grab strength affects volume
+
 void setup() {
-  fullScreen(P3D);  // to do: make it look nicer on full screen
-  //size(1200, 675, P3D); 
+  //fullScreen(P3D, 2);  // to do: make it look nicer on full screen
+  size(1200, 675, P3D); 
   background(0);
   
   minim = new Minim(this);
@@ -64,16 +85,29 @@ void setup() {
   song = minim.getLineIn();
   
   // // when using pre-loaded songs
-  //song = minim.loadFile("gone_too_soon.mp3", 1024);
+  //song2 = minim.loadFile("gone_too_soon.mp3", 1024);
   //song.play();
+
   
-  fft = new FFT( song.bufferSize(), song.sampleRate());
+  fft = new ddf.minim.analysis.FFT( song.bufferSize(), song.sampleRate());
   // first param indicates minimum bandwidth
   // second dictates how many bands to split it into
   fft.logAverages( 20, 7 );
   
   xScale = int((width / 3 ) / fft.avgSize());
   yScale = yScaleDefault;
+  
+  // point to start clearing back of fftFrames 
+  // to create the illusion movement within landscape "slice"
+  removalThreshold = height - (height * 0.45);
+  
+  setCameraVariables();
+  
+  leap = new LeapMotion(this);
+  soundscape = new Soundscape();
+}
+
+void setCameraVariables () {
   
   xRotateDefault = 60;
   yRotateDefault = -5;
@@ -85,7 +119,7 @@ void setup() {
 
   // TODO: 
   // for a 3.5 x grid. will want to try to adapt for x conversion from 3.5 to 4 with camera change for a greater effect...
-  // this will involve using an "if" in the loop and multiplying across the x axis
+  // this will involve using an "if" in the loop and multiplying across the x axis in the render function
   //xTranslateDefault = width / 2 + (width * 0.05); 
   //yTranslateDefault = (height / 2) - (height * 0.30);
 
@@ -103,7 +137,7 @@ void setup() {
     zTranslateHand    = 530;
   } else {
     // macbook pro, 16:10
-    //zTranslateHand = 780;
+    zTranslateHand    = 780;
     xTranslateDefault = width / 2 - (width * 0.01);
     yTranslateDefault = (height / 2) - (height * 0.25);
     zTranslateHand    = 700;
@@ -117,19 +151,9 @@ void setup() {
   yTranslate = yTranslateDefault;
   zTranslate = zTranslateDefault;
   
-  // point to start clearing back of fftFrames 
-  // to create the illusion movement within landscape "slice"
-  removalThreshold = height - (height * 0.45);
-
-  leap = new LeapMotion(this);
-  soundscape = new Soundscape();
 }
 
 void draw() {
- 
-  //float handHeight = map(hCoordinates.y, -1000, 1000, 0.00001, 4);
- 
-  float handHeight = 1;
   background(0);
   noStroke();
   strokeWeight(1);
@@ -149,7 +173,7 @@ void draw() {
     yIncrement -= yScale; // halt the y-axis in place
   }
   
-  soundscape.render(handHeight);
+  soundscape.render();
   soundscape.drawStartLine();
   
   soundscape.lastFrame.clear();
@@ -163,25 +187,34 @@ class Soundscape {
   ArrayList<PVector> lastFrame = new ArrayList<PVector>(); 
   boolean shiftForward = false;
 
-  void render(float handHeight) {
+  void render() {
 
     strokeWeight(1);
     stroke(255, 50);
     
-    renderCamera();
-    
     // if all variables are equal to hand settings, this means the leapmotion is in play,
-    // and full transition on all camera angles are complete
+    // and the full transition for all camera angles is complete
     if (
-        (xRotate == xRotateHand) && (yRotate == yRotateHand) && (zRotate == zRotateHand)
+        (leap.getHands().size() > 0) && (xRotate == xRotateHand) 
+         && (yRotate == yRotateHand) && (zRotate == zRotateHand)
          && (xTranslate == xTranslateHand) && (yTranslate == yTranslateHand) 
          && (zTranslate == zTranslateHand)
       ) {
-      Hand hand = leap.getHands().get(0);
-      PVector handPosition = hand.getPosition();
-      println(handPosition);
+        Hand hand = leap.getHands().get(0);
+        handPitch = hand.getPitch();
+        handYaw   = hand.getYaw();
+        handRoll  = hand.getRoll();
+        handGrab  = hand.getGrabStrength();
+        
+        // to be on the safe side, only do it every 3 frames, to avoid overwhelming
+        if (frameCount % 3 == 0 && handGrab  > 0.3) {
+          changeVolume(handGrab);
+        }
+     
     }
-
+   
+    adjustCamera(handPitch, handRoll, handYaw);
+   
     int soundscapeFramesIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeFrames) {
       if (soundscapeFramesIndex >= soundscapeFrames.size() - 1) {
@@ -193,11 +226,12 @@ class Soundscape {
         if (fftFrameIndex >= fftFrame.size() - 1) {
           continue;
         }
-        vertex(fftVector.x, fftVector.y, fftVector.z * handHeight);
+        // TODO: connect the first triangle too to straighten the edge
+        vertex(fftVector.x, fftVector.y, fftVector.z);
         vertex(
           soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).x, 
           soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).y, 
-          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).z * handHeight
+          soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).z
         );
         fftFrameIndex++;
       }
@@ -206,17 +240,19 @@ class Soundscape {
     }
   }
   
-  void renderCamera() {
+  void adjustCamera(float handPitch, float handRoll, float handYaw) {
      translate(
       xTranslate,
       yTranslate,
       zTranslate
     );
 
-    rotateX(radians(xRotate));
-    rotateY(radians(yRotate));
-    rotateZ(radians(zRotate));
+    // TODO: constrain the roll so that it does not get into the negatives
+    rotateX(radians(xRotate + (-handPitch * handPitchMultiplier)));
+    rotateY(radians(yRotate + (handRoll * handRollMultiplier)));
+    rotateZ(radians(zRotate + (handYaw * handYawMultiplier)));
     
+    // TODO : Remove. This is for debugging
     //translate(
     //  xTranslateHand,
     //  yTranslateHand,
@@ -231,14 +267,17 @@ class Soundscape {
       
       if (xRotate < xRotateHand) {
         xRotate += rotateChangeScale;
+        xRotate = constrain(xRotate, 0, xRotateHand);
       }
       
       if (yRotate < yRotateHand) {
         yRotate += rotateChangeScale;
+        yRotate = constrain(yRotate, 0, yRotateHand);
       }
       
       if (zRotate < zRotateHand) {
         zRotate += rotateChangeScale;
+        zRotate = constrain(zRotate, 0, zRotateHand);
       }
       
       if (xTranslate < xTranslateHand) {
@@ -262,16 +301,52 @@ class Soundscape {
        
     } else {
      
+      // LEFTOFF HERE: WHAT WHY IS THIS SO DIFFICULT???
+      
+       // gradually reset hand variables
+      if (handPitch > 0 ) {
+        handPitch--;
+        handPitch = constrain(handPitch, 0, 1000);
+      } else {
+        handPitch++;
+        handPitch = constrain(handPitch, -1000, 0);
+      }
+      
+      //println(handPitch);
+      
+      if (handYaw > 0 ) {
+        handYaw--;
+        handYaw = constrain(handYaw, 0, 1000);
+      } else {
+        handYaw++;
+        handYaw = constrain(handYaw, -1000, 0);
+      }
+      
+      //println(handYaw);
+      
+      if (handRoll > 0 ) {
+        handRoll--;
+        handRoll = constrain(handRoll, 0, 1000);
+      } else {
+        handRoll++;
+        handRoll = constrain(handRoll, -1000, 0);
+      }
+      
+      //println(handRoll);
+      
       if (xRotate > xRotateDefault) {
         xRotate -= rotateChangeScale;
+        xRotate = constrain(xRotate, xRotateDefault, 10000);
       }
       
       if (yRotate > yRotateDefault) {
         yRotate -= rotateChangeScale;
+        yRotate = constrain(yRotate, yRotateDefault, 10000);
       }
       
       if (zRotate > zRotateDefault) {
         zRotate -= rotateChangeScale;
+        zRotate = constrain(zRotate, zRotateDefault, 10000);
       }
       
       if (xTranslate > xTranslateDefault) {
@@ -311,6 +386,9 @@ class Soundscape {
           i * xScale, 
           yIncrement + yScale, 
           // multiply by i to somewhat undo the logarithmic curve
+          
+          //  if we adjust volume via system, we need to change the zMuffle to "fake" the audio change
+          // if we use system volume
           fft.getAvg(i) * i / zMuffle
         );
       fftFrame.add(vector);
@@ -333,4 +411,80 @@ class Soundscape {
       );
     }
   }
+}
+
+void changeVolume(float handGrab) {
+
+  handGrab = map(handGrab, 0, 1, 10, 1);
+  
+  // can't manipulate volume from minim library
+  // so exec-ing osascript instead
+  // this will only work on mac
+  // this is hacky---need to clean this up
+  
+  // seems like it needs to be a number from 1- 10 for osascript
+  String volume = String.format("set volume %f", handGrab);
+  String[] cmd = {"osascript", "-e", volume}; 
+  
+  // File workingDir = new File("/Users/Emily/Code/Processing/examples/sketch_test");   
+  // where to do execute. pass in full path
+  String returnedValues;                                                                    
+
+  // give us some info:
+  println(volume);
+  //println("Running command: " + );
+  //println("Location:        " + workingDir);
+  //println("---------------------------------------------\n");
+  
+  //println();
+  
+  //println();
+
+  // run the command!
+  //try {
+
+  //  // complicated!  basically, we have to load the exec command within Java's Runtime
+  //  // exec asks for 1. command to run, 2. null which essentially tells Processing to 
+  //  // inherit the environment settings from the current setup (I am a bit confused on
+  //  // this so it seems best to leave it), and 3. location to work (full path is best)
+  //  Process p = Runtime.getRuntime().exec(cmd, null, workingDir);
+
+  //  // variable to check if we've received confirmation of the command
+  //  int i = p.waitFor();
+
+  //  // if we have an output, print to screen
+  //  if (i == 0) {
+
+  //    // BufferedReader used to get values back from the command
+  //    BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+  //    // read the output from the command
+  //    while ( (returnedValues = stdInput.readLine ()) != null) {
+  //      println(returnedValues);
+  //    }
+  //  }
+
+  //  // if there are any error messages but we can still get an output, they print here
+  //  else {
+  //    BufferedReader stdErr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+  //    // if something is returned (ie: not null) print the result
+  //    while ( (returnedValues = stdErr.readLine ()) != null) {
+  //      println(returnedValues);
+  //    }
+  //  }
+  //}
+
+  //// if there is an error, let us know
+  //catch (Exception e) {
+  //  println("Error running command!");  
+  //  println(e);
+  //}
+
+  // when done running command, quit
+  //println("\n---------------------------------------------");
+  //println("DONE!");
+  //exit();
+  
+  
 }
