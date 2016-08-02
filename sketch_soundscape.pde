@@ -20,8 +20,9 @@ Soundscape             soundscape;
 AudioPlayer            song2;
 
 float   yScaleDefault = 5;
-float   yScaleHand = 10;
+float   yScaleHand = 12;
 float   yScale;
+float   yScaleChange = 0.3;
 
 int     xScale;
 float   removalThreshold;
@@ -62,6 +63,7 @@ float roll = 0; // rotation around z-axis
 
 float translateChangeScale = 3;
 float rotateChangeScale = 0.6;
+float handChangeScale = 0.5;
 
 float handPitch;
 float handYaw;
@@ -78,7 +80,7 @@ boolean volumeDefault = false;
 // grab strength affects volume
 
 void setup() {
-  //fullScreen(P3D, 2);  // to do: make it look nicer on full screen
+  //fullScreen(P3D);  // to do: make it look nicer on full screen
   size(1200, 675, P3D); 
   background(0);
   
@@ -175,6 +177,37 @@ void draw() {
     yIncrement -= yScale; // halt the y-axis in place
   }
   
+   // if all variables are equal to hand settings, this means the leapmotion is in play,
+   // and the full transition for all camera angles is complete
+   if (
+      (leap.getHands().size() > 0) && (xRotate == xRotateHand) 
+       && (yRotate == yRotateHand) && (zRotate == zRotateHand)
+       && (xTranslate == xTranslateHand) && (yTranslate == yTranslateHand) 
+       && (zTranslate == zTranslateHand)
+   ) {
+      
+      Hand hand = leap.getHands().get(0);
+      handPitch = hand.getPitch();
+      handYaw   = hand.getYaw();
+      handRoll  = hand.getRoll();
+      handGrab  = hand.getGrabStrength();
+      
+      // automatically change music back to full volume
+      if (handGrab <= 0.10 && volumeDefault == false) {
+        changeVolume(handGrab);
+        volumeDefault = true;
+      }
+      
+      // only allow changing sound every 10 frames to avoid overwhelming
+      if (frameCount % 15 == 0 && handGrab > 0.10) {
+        volumeDefault = false;
+        changeVolume(handGrab);
+      }
+      handMuffle = map(handGrab, 0, 1, 1, 0.2);
+  } else {
+    handMuffle = 1;
+  }
+  
   soundscape.render();
   soundscape.drawStartLine();
   
@@ -193,38 +226,8 @@ class Soundscape {
 
     strokeWeight(1);
     stroke(255, 50);
-    
-    // if all variables are equal to hand settings, this means the leapmotion is in play,
-    // and the full transition for all camera angles is complete
-    if (
-        (leap.getHands().size() > 0) && (xRotate == xRotateHand) 
-         && (yRotate == yRotateHand) && (zRotate == zRotateHand)
-         && (xTranslate == xTranslateHand) && (yTranslate == yTranslateHand) 
-         && (zTranslate == zTranslateHand)
-      ) {
-        Hand hand = leap.getHands().get(0);
-        handPitch = hand.getPitch();
-        handYaw   = hand.getYaw();
-        handRoll  = hand.getRoll();
-        handGrab  = hand.getGrabStrength();
-        
-        // automatically change music back to full volume
-        if (handGrab <= 0.10 && volumeDefault == false) {
-          changeVolume(handGrab);
-          volumeDefault = true;
-        }
-        
-        // only allow changing sound every 10 frames to avoid overwhelming
-        if (frameCount % 15 == 0 && handGrab > 0.10) {
-          volumeDefault = false;
-          changeVolume(handGrab);
-        }
-        handMuffle = map(handGrab, 0, 1, 1, 0.1);
-    } else {
-      handMuffle = 1;
-    }
    
-    adjustCamera(handPitch, handRoll, handYaw);
+    adjustCamera();
    
     int soundscapeFramesIndex = 0;
     for (ArrayList<PVector> fftFrame : soundscapeFrames) {
@@ -265,10 +268,9 @@ class Soundscape {
       PVector vector = new PVector(
           i * xScale, 
           yIncrement + yScale, 
-          // multiply by i to somewhat undo the logarithmic curve
-          
-          //  if we adjust volume via system, we need to change the zMuffle to "fake" the audio change
-          // if we use system volume
+          // 1) multiply by i to somewhat undo the logarithmic curve
+          // 2) how you adjust via osx doesn't technically change volume of piped music through iShowYou
+          // so, we have to "fake" the visual result by by shrinking the landscape according to the hand clench
           (fft.getAvg(i) * i / zMuffle) * handMuffle
         );
       fftFrame.add(vector);
@@ -293,7 +295,7 @@ class Soundscape {
   }
 }
 
-void adjustCamera(float handPitch, float handRoll, float handYaw) {
+void adjustCamera() {
      translate(
       xTranslate,
       yTranslate,
@@ -349,43 +351,34 @@ void adjustCamera(float handPitch, float handRoll, float handYaw) {
       }
       
       if (yScale < yScaleHand) {
-        yScale += 0.5;
+        yScale += yScaleChange;
       }
        
     } else {
-     
-      // LEFTOFF HERE: WHAT WHY IS THIS SO DIFFICULT???
-      
-       // gradually reset hand variables
+      // gradually reset hand variables
       if (handPitch > 0 ) {
-        handPitch--;
+        handPitch -= handChangeScale;
         handPitch = constrain(handPitch, 0, 1000);
       } else {
-        handPitch++;
+        handPitch += handChangeScale;
         handPitch = constrain(handPitch, -1000, 0);
       }
       
-      //println(handPitch);
-      
       if (handYaw > 0 ) {
-        handYaw--;
-        handYaw = constrain(handYaw, 0, 1000);
+        handYaw -= handChangeScale;
+        handYaw = constrain(handYaw, 0, 10000);
       } else {
-        handYaw++;
+        handYaw += handChangeScale;
         handYaw = constrain(handYaw, -1000, 0);
       }
       
-      //println(handYaw);
-      
       if (handRoll > 0 ) {
-        handRoll--;
-        handRoll = constrain(handRoll, 0, 1000);
+        handRoll -= handChangeScale;
+        handRoll = constrain(handRoll, 0, 10000);
       } else {
-        handRoll++;
+        handRoll += handChangeScale;
         handRoll = constrain(handRoll, -1000, 0);
       }
-      
-      //println(handRoll);
       
       if (xRotate > xRotateDefault) {
         xRotate -= rotateChangeScale;
@@ -418,7 +411,7 @@ void adjustCamera(float handPitch, float handRoll, float handYaw) {
       }
       
       if (yScale > yScaleDefault) {
-        yScale -= 0.5;
+        yScale -= yScaleChange;
         yScale = constrain(yScale, yScaleDefault, 100);
       }
     }
