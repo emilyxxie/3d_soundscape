@@ -20,7 +20,7 @@ Soundscape             soundscape;
 AudioPlayer            song2;
 
 float   yScaleDefault = 5;
-float   yScaleHand = 15;
+float   yScaleHand = 10;
 float   yScale;
 
 int     xScale;
@@ -67,8 +67,9 @@ float handPitch;
 float handYaw;
 float handRoll;
 float handGrab;
+float handMuffle;
 
-float handPitchMultiplier = 0.2;
+float handPitchMultiplier = 0.5;
 float handRollMultiplier = 0.2;
 float handYawMultiplier = 0.5;
 
@@ -213,11 +214,14 @@ class Soundscape {
           volumeDefault = true;
         }
         
-        // only do it every 10 frames, to avoid overwhelming the system
+        // only allow changing sound every 10 frames to avoid overwhelming
         if (frameCount % 15 == 0 && handGrab > 0.10) {
           volumeDefault = false;
           changeVolume(handGrab);
         }
+        handMuffle = map(handGrab, 0, 1, 1, 0.1);
+    } else {
+      handMuffle = 1;
     }
    
     adjustCamera(handPitch, handRoll, handYaw);
@@ -246,8 +250,50 @@ class Soundscape {
       soundscapeFramesIndex++;
     }
   }
-  
-  void adjustCamera(float handPitch, float handRoll, float handYaw) {
+
+  void shiftBackward() {
+    for (ArrayList<PVector> fftFrame : soundscapeFrames) {
+      for (PVector fftVector : fftFrame) {
+        fftVector.y -= yScale;
+      }
+    }
+  }
+ 
+  void addFrame() {
+    ArrayList<PVector> fftFrame = new ArrayList<PVector>();
+    for (int i = 0; i < fft.avgSize(); i++) {
+      PVector vector = new PVector(
+          i * xScale, 
+          yIncrement + yScale, 
+          // multiply by i to somewhat undo the logarithmic curve
+          
+          //  if we adjust volume via system, we need to change the zMuffle to "fake" the audio change
+          // if we use system volume
+          (fft.getAvg(i) * i / zMuffle) * handMuffle
+        );
+      fftFrame.add(vector);
+      lastFrame.add(vector);
+    }
+    soundscapeFrames.add(fftFrame);
+  }
+
+  void drawStartLine() {
+    for (int i = 0; i < lastFrame.size() - 1; i++) {
+      strokeWeight(3);
+      stroke(0, 255, 255);
+      line(
+        lastFrame.get(i).x, 
+        lastFrame.get(i).y, 
+        lastFrame.get(i).z, 
+        lastFrame.get(i + 1).x, 
+        lastFrame.get(i + 1).y, 
+        lastFrame.get(i + 1).z
+      );
+    }
+  }
+}
+
+void adjustCamera(float handPitch, float handRoll, float handYaw) {
      translate(
       xTranslate,
       yTranslate,
@@ -378,48 +424,6 @@ class Soundscape {
     }
   }
 
-  void shiftBackward() {
-    for (ArrayList<PVector> fftFrame : soundscapeFrames) {
-      for (PVector fftVector : fftFrame) {
-        fftVector.y -= yScale;
-      }
-    }
-  }
- 
-  void addFrame() {
-    ArrayList<PVector> fftFrame = new ArrayList<PVector>();
-    for (int i = 0; i < fft.avgSize(); i++) {
-      PVector vector = new PVector(
-          i * xScale, 
-          yIncrement + yScale, 
-          // multiply by i to somewhat undo the logarithmic curve
-          
-          //  if we adjust volume via system, we need to change the zMuffle to "fake" the audio change
-          // if we use system volume
-          fft.getAvg(i) * i / zMuffle
-        );
-      fftFrame.add(vector);
-      lastFrame.add(vector);
-    }
-    soundscapeFrames.add(fftFrame);
-  }
-
-  void drawStartLine() {
-    for (int i = 0; i < lastFrame.size() - 1; i++) {
-      strokeWeight(3);
-      stroke(0, 255, 255);
-      line(
-        lastFrame.get(i).x, 
-        lastFrame.get(i).y, 
-        lastFrame.get(i).z, 
-        lastFrame.get(i + 1).x, 
-        lastFrame.get(i + 1).y, 
-        lastFrame.get(i + 1).z
-      );
-    }
-  }
-}
-
 void changeVolume(float handGrab) {
 
   handGrab = map(handGrab, 0.20, 1, 10, 4);  
@@ -430,10 +434,7 @@ void changeVolume(float handGrab) {
   // seems like it needs to be a number from 1- 10 for osascript
   String volume = String.format("set volume %f", handGrab);
   String[] cmd = {"osascript", "-e", volume}; 
-  
-   File workingDir = new File("/Users/Emily/Code/Processing/examples/sketch_test");   
-  // where to do execute. pass in full path
-  String returnedValues;                                                                    
+  File workingDir = new File("/Users/Emily/Code/Processing/examples/sketch_test");                                                                    
 
   try {
     // command, null = inherit porcessing environment, where to execute command
