@@ -240,12 +240,12 @@ class Soundscape {
           continue;
         }
         // TODO: connect the first triangle too to straighten the edge
-        float col=min(255, map(fftVector.z, 0,100, 0,255));
+        //float col=min(255, map(fftVector.z, 0,100, 0,255));
         //fill(255, 255, 255);
-        fill(col,col*0.5,0);
+        //fill(col,col*0.5,0);
         vertex(fftVector.x, fftVector.y, fftVector.z);
-        col=min(255, map(fftVector.z, 0,100, 0,255));
-        fill(col,col*0.5,0);
+        //col=min(255, map(fftVector.z, 0,100, 0,255));
+        //fill(col,col*0.5,0);
         vertex(
           soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).x, 
           soundscapeFrames.get(soundscapeFramesIndex + 1).get(fftFrameIndex + 1).y, 
