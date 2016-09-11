@@ -26,7 +26,7 @@ float   yScaleChange = 0.3;
 int     xScale;
 float   removalThreshold;
 float   yIncrement = 0;
-float   zMuffle = 30;// 20; // factor to shrink the z scale by
+float   zMuffle = 20;// 20; // factor to shrink the z scale by
 
 // camera configurations for default mode
 float xRotateDefault;
@@ -79,9 +79,10 @@ boolean volumeDefault = false;
 // grab strength affects volume
 
 void setup() {
-  //fullScreen(P3D);  // to do: make it look nicer on full screen
-  size(1200, 675, P3D); 
+  fullScreen(P3D, 2);  // to do: make it look nicer on full screen
+  //size(1200, 675, P3D); 
   background(0);
+  noCursor();
   
   minim = new Minim(this);
   // when using computer audio input
