@@ -1,3 +1,5 @@
+// Caveat: this is pretty terrible code written far too quickly
+
 import de.voidplus.leapmotion.*;
 import java.awt.Frame;
 import ddf.minim.analysis.*;
